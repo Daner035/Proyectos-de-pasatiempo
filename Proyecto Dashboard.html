@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBERTECH - Hardware Store Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased">
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between z-20">
+        <div>
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+                <i class="fa-solid fa-microchip text-cyan-400 text-2xl"></i>
+                <div>
+                    <span class="font-bold text-lg tracking-wider text-white block leading-none">CYBERTECH</span>
+                    <span class="text-[10px] text-cyan-400 uppercase tracking-widest font-semibold">Hardware Store</span>
+                </div>
+            </div>
+
+            <!-- Selector de Rol (Vendedor vs Cliente) -->
+            <div class="p-4 border-b border-slate-800 bg-slate-950/50">
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Modo de Navegación</label>
+                <div class="grid grid-cols-2 gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button onclick="switchRole('client')" id="role-btn-client" class="py-1.5 px-2 text-xs font-semibold rounded-md transition bg-cyan-600 text-white">
+                        <i class="fa-solid fa-user-tag mr-1"></i> Cliente
+                    </button>
+                    <button onclick="switchRole('admin')" id="role-btn-admin" class="py-1.5 px-2 text-xs font-semibold rounded-md transition text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-user-gear mr-1"></i> Vendedor
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menú de Opciones -->
+            <nav class="mt-4 space-y-1 px-4">
+                <!-- Menú Cliente -->
+                <div id="nav-client" class="space-y-1">
+                    <button onclick="switchTab('store')" id="btn-tab-store" class="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-cyan-600/20 text-cyan-400 font-medium border border-cyan-500/30">
+                        <span><i class="fa-solid fa-store mr-2"></i> Catálogo Store</span>
+                    </button>
+                    <button onclick="switchTab('cart')" id="btn-tab-cart" class="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-400 font-medium transition">
+                        <span><i class="fa-solid fa-cart-shopping mr-2"></i> Mi Carrito</span>
+                        <span id="cart-badge" class="bg-cyan-500 text-slate-950 font-bold text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button onclick="switchTab('client-orders')" id="btn-tab-client-orders" class="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-400 font-medium transition">
+                        <span><i class="fa-solid fa-receipt mr-2"></i> Mis Facturas</span>
+                    </button>
+                </div>
+
+                <!-- Menú Admin (Vendedor) -->
+                <div id="nav-admin" class="space-y-1 hidden">
+                    <button onclick="switchTab('inventory')" id="btn-tab-inventory" class="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-400 font-medium transition">
+                        <span><i class="fa-solid fa-boxes-stacked mr-2"></i> Inventario CRUD</span>
+                    </button>
+                    <button onclick="switchTab('orders')" id="btn-tab-orders" class="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-400 font-medium transition">
+                        <span><i class="fa-solid fa-receipt mr-2"></i> Pedidos y Facturas</span>
+                        <span id="orders-badge" class="bg-amber-500 text-slate-950 font-bold text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Footer Sidebar Status -->
+        <div class="p-4 border-t border-slate-800 flex items-center gap-3">
+            <div id="user-avatar" class="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-400 flex items-center justify-center font-bold">C</div>
+            <div>
+                <p id="user-role-label" class="text-sm font-medium text-white">Usuario Cliente</p>
+                <p class="text-[11px] text-emerald-400"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Persistencia Local Active</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 flex flex-col overflow-y-auto bg-slate-950">
+        <!-- Header Superior -->
+        <header class="h-16 bg-slate-900/60 backdrop-blur border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-10">
+            <h1 id="page-title" class="text-xl font-bold text-white">Catálogo de Componentes de PC</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="resetDefaultData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Resetear Datos
+                </button>
+            </div>
+        </header>
+
+        <!-- VISTA 1: CATÁLOGO DE COMPONENTES (CLIENTE) -->
+        <section id="view-store" class="p-8 space-y-5">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                    <button onclick="filterCategory('All')" class="cat-btn px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium">Todos</button>
+                    <button onclick="filterCategory('Procesadores')" class="cat-btn px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-800">Procesadores</button>
+                    <button onclick="filterCategory('Tarjetas Gráficas')" class="cat-btn px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-800">Tarjetas Gráficas</button>
+                    <button onclick="filterCategory('Memorias RAM')" class="cat-btn px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-800">Memorias RAM</button>
+                    <button onclick="filterCategory('Almacenamiento')" class="cat-btn px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-800">Almacenamiento</button>
+                </div>
+            </div>
+
+            <div id="store-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Inyectado por JS -->
+            </div>
+        </section>
+
+        <!-- VISTA 2: CARRITO DE COMPRAS & CHECKOUT (CLIENTE) -->
+        <section id="view-cart" class="p-8 space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h2 class="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-3">Resumen de tu Selección</h2>
+                    <div id="cart-items-container" class="space-y-4">
+                        <!-- Inyectado dinámicamente -->
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 h-fit space-y-4">
+                    <h2 class="text-lg font-bold text-white border-b border-slate-800 pb-3">Datos de Facturación</h2>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nombre Completo</label>
+                        <input type="text" id="client-name" placeholder="Ej: Diego Hurtado" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Cédula / RIF (Ej: V-28123456)</label>
+                        <input type="text" id="client-id" placeholder="V-28123456" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Dirección de Entrega</label>
+                        <input type="text" id="client-address" placeholder="Ej: Porlamar, Nueva Esparta" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div class="border-t border-slate-800 pt-4 space-y-2">
+                        <div class="flex justify-between text-sm text-slate-400">
+                            <span>Subtotal:</span>
+                            <span id="cart-subtotal" class="font-mono">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-slate-400">
+                            <span>IVA (16%):</span>
+                            <span id="cart-tax" class="font-mono">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-slate-800/60">
+                            <span>Total Final:</span>
+                            <span id="cart-total" class="font-mono text-cyan-400">$0.00</span>
+                        </div>
+                    </div>
+
+                    <button onclick="processOrder()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition mt-4 shadow-lg shadow-emerald-950">
+                        <i class="fa-solid fa-check-circle mr-2"></i> Procesar Orden de Compra
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 3: MIS FACTURAS Y PEDIDOS (CLIENTE) -->
+        <section id="view-client-orders" class="p-8 space-y-6 hidden">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                <div class="p-5 border-b border-slate-800 font-bold text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="block text-base font-bold text-white">Historial de mis Pedidos y Facturas</span>
+                        <span class="text-xs text-slate-400">Consulta e imprime tus comprobantes filtrando por tu Cédula o RIF</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div class="relative w-full sm:w-64">
+                            <input type="text"
+                                   id="client-search-id"
+                                   oninput="renderClientOrders()"
+                                   placeholder="Ej: V-12345678"
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                        </div>
+                        <button onclick="clearClientSearch()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition border border-slate-700">
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <div id="client-orders-list-container" class="p-6 space-y-4">
+                    <!-- Facturas inyectadas por JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 4: INVENTARIO Y STOCK (VENDEDOR / ADMIN) -->
+        <section id="view-inventory" class="p-8 space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4 h-fit">
+                    <h2 class="text-lg font-bold text-white mb-2">Añadir Componente al Stock</h2>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nombre del Componente</label>
+                        <input type="text" id="inv-name" placeholder="Ej: AMD Ryzen 5 7600X" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Categoría</label>
+                            <select id="inv-cat" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                <option value="Procesadores">Procesadores</option>
+                                <option value="Tarjetas Gráficas">Tarjetas Gráficas</option>
+                                <option value="Memorias RAM">Memorias RAM</option>
+                                <option value="Almacenamiento">Almacenamiento</option>
+                                <option value="Fuentes de Poder">Fuentes de Poder</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Precio ($)</label>
+                            <input type="number" step="0.01" id="inv-price" placeholder="240.00" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Stock Disponible</label>
+                        <input type="number" id="inv-stock" placeholder="10" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <button onclick="addInventoryItem()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-2.5 rounded-lg transition mt-2">
+                        Guardar en Base de Datos
+                    </button>
+                </div>
+
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                    <div class="p-5 border-b border-slate-800 font-bold text-white">Gestión de Stock Activo</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 text-xs uppercase border-b border-slate-800">
+                                <tr>
+                                    <th class="p-4">Producto</th>
+                                    <th class="p-4">Categoría</th>
+                                    <th class="p-4">Precio</th>
+                                    <th class="p-4">Stock</th>
+                                    <th class="p-4 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y divide-slate-800">
+                                <!-- Inyectado por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 5: HISTORIAL DE PEDIDOS Y FACTURACIÓN (VENDEDOR) -->
+        <section id="view-orders" class="p-8 space-y-6 hidden">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                <div class="p-5 border-b border-slate-800 font-bold text-white">Facturas y Pedidos de Clientes (Vista Vendedor)</div>
+                <div id="orders-list-container" class="p-6 space-y-4">
+                    <!-- Pedidos inyectados aquí -->
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- PLANTILLA OCULTA PARA IMPRESIÓN DE FACTURA PDF -->
+<div class="hidden">
+    <div id="invoice-pdf-template" class="p-8 bg-white text-slate-900 font-sans max-w-2xl mx-auto">
+        <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-wider">CYBERTECH HARDWARE</h1>
+                <p class="text-xs text-slate-600">RIF: J-40982311-0 | Electiva IV Project</p>
+                <p class="text-xs text-slate-600">Porlamar, Nueva Esparta - Venezuela</p>
+            </div>
+            <div class="text-right">
+                <span class="text-sm font-bold text-cyan-700 block">FACTURA FISCAL</span>
+                <span id="pdf-invoice-id" class="text-xs text-slate-500 font-mono">#INV-000</span>
+                <p id="pdf-invoice-date" class="text-xs text-slate-500">Fecha: --/--/----</p>
+            </div>
+        </div>
+
+        <div class="mb-6 bg-slate-100 p-4 rounded border border-slate-300">
+            <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Datos del Cliente</h3>
+            <p id="pdf-client-name" class="text-sm font-bold">Cliente: </p>
+            <p id="pdf-client-id" class="text-xs text-slate-700">Cédula / RIF: </p>
+            <p id="pdf-client-address" class="text-xs text-slate-700">Dirección: </p>
+        </div>
+
+        <table class="w-full text-left text-xs mb-6 border-collapse">
+            <thead>
+                <tr class="bg-slate-900 text-white">
+                    <th class="p-2">Cant.</th>
+                    <th class="p-2">Descripción Hardware</th>
+                    <th class="p-2 text-right">Precio Unit.</th>
+                    <th class="p-2 text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-items-body" class="divide-y divide-slate-300">
+                <!-- Ítems inyectados para el PDF -->
+            </tbody>
+        </table>
+
+        <div class="flex justify-end border-t border-slate-400 pt-4">
+            <div class="w-48 space-y-1 text-xs text-slate-700">
+                <div class="flex justify-between">
+                    <span>Base Imponible:</span>
+                    <span id="pdf-subtotal" class="font-mono">$0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>IVA (16%):</span>
+                    <span id="pdf-tax" class="font-mono">$0.00</span>
+                </div>
+                <div class="flex justify-between font-bold text-sm text-slate-950 pt-1 border-t border-slate-900">
+                    <span>Total Pagado:</span>
+                    <span id="pdf-total" class="font-mono text-cyan-800">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center border-t border-dashed border-slate-400 pt-4">
+            <p class="text-[10px] text-slate-500">Gracias por su compra en CyberTech - Garantía oficial de 12 meses en todos los componentes.</p>
+        </div>
+    </div>
+</div>
+
+<!-- LÓGICA JAVASCRIPT -->
+<script>
+    const defaultProducts = [
+        { id: 1, name: "NVIDIA GeForce RTX 4070 Super", category: "Tarjetas Gráficas", price: 599.99, stock: 8 },
+        { id: 2, name: "AMD Ryzen 7 7800X3D", category: "Procesadores", price: 389.00, stock: 4 },
+        { id: 3, name: "Corsair Vengeance 32GB (2x16) DDR5", category: "Memorias RAM", price: 115.50, stock: 12 },
+        { id: 4, name: "Samsung 990 Pro 2TB NVMe", category: "Almacenamiento", price: 169.99, stock: 6 },
+        { id: 5, name: "Fuente EVGA SuperNOVA 850W Gold", category: "Fuentes de Poder", price: 139.99, stock: 5 }
+    ];
+
+    let products = JSON.parse(localStorage.getItem('ct_products')) || defaultProducts;
+    let cart = JSON.parse(localStorage.getItem('ct_cart')) || [];
+    let orders = JSON.parse(localStorage.getItem('ct_orders')) || [];
+
+    function saveData() {
+        localStorage.setItem('ct_products', JSON.stringify(products));
+        localStorage.setItem('ct_cart', JSON.stringify(cart));
+        localStorage.setItem('ct_orders', JSON.stringify(orders));
+        updateBadges();
+    }
+
+    function resetDefaultData() {
+        localStorage.clear();
+        products = [...defaultProducts];
+        cart = [];
+        orders = [];
+        saveData();
+        renderStore();
+        renderInventory();
+        renderCart();
+        renderOrders();
+        renderClientOrders();
+        alert("Base de datos reiniciada a los valores predeterminados.");
+    }
+
+    let currentRole = 'client';
+    let currentTab = 'store';
+
+    function switchRole(role) {
+        currentRole = role;
+        const clientBtn = document.getElementById('role-btn-client');
+        const adminBtn = document.getElementById('role-btn-admin');
+        const navClient = document.getElementById('nav-client');
+        const navAdmin = document.getElementById('nav-admin');
+        const userLabel = document.getElementById('user-role-label');
+        const userAvatar = document.getElementById('user-avatar');
+
+        if (role === 'client') {
+            clientBtn.className = "py-1.5 px-2 text-xs font-semibold rounded-md transition bg-cyan-600 text-white";
+            adminBtn.className = "py-1.5 px-2 text-xs font-semibold rounded-md transition text-slate-400 hover:text-white";
+            navClient.classList.remove('hidden');
+            navAdmin.classList.add('hidden');
+            userLabel.innerText = "Usuario Cliente";
+            userAvatar.innerText = "C";
+            switchTab('store');
+        } else {
+            adminBtn.className = "py-1.5 px-2 text-xs font-semibold rounded-md transition bg-cyan-600 text-white";
+            clientBtn.className = "py-1.5 px-2 text-xs font-semibold rounded-md transition text-slate-400 hover:text-white";
+            navAdmin.classList.remove('hidden');
+            navClient.classList.add('hidden');
+            userLabel.innerText = "Admin Vendedor";
+            userAvatar.innerText = "V";
+            switchTab('inventory');
+        }
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        const views = ['store', 'cart', 'inventory', 'orders', 'client-orders'];
+        views.forEach(v => {
+            const el = document.getElementById(`view-${v}`);
+            if(el) el.classList.add('hidden');
+        });
+
+        document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+        const titles = {
+            'store': 'Catálogo de Componentes (Vista Cliente)',
+            'cart': 'Carrito de Compras y Verificación',
+            'inventory': 'Gestión de Inventario (Vista Vendedor)',
+            'orders': 'Gestión de Pedidos y Emitir Facturas (Vendedor)',
+            'client-orders': 'Mis Facturas y Pedidos (Vista Cliente)'
+        };
+        document.getElementById('page-title').innerText = titles[tab] || 'CYBERTECH';
+
+        if(tab === 'store') renderStore();
+        if(tab === 'cart') renderCart();
+        if(tab === 'inventory') renderInventory();
+        if(tab === 'orders') renderOrders();
+        if(tab === 'client-orders') renderClientOrders();
+    }
+
+    function renderStore(categoryFilter = 'All') {
+        const grid = document.getElementById('store-grid');
+        grid.innerHTML = '';
+
+        const filtered = categoryFilter === 'All'
+            ? products
+            : products.filter(p => p.category === categoryFilter);
+
+        filtered.forEach(p => {
+            const stockStatus = p.stock > 0
+                ? `<span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded font-medium">${p.stock} disponibles</span>`
+                : `<span class="text-xs bg-rose-950 text-rose-400 border border-rose-800 px-2 py-0.5 rounded font-medium">Agotado</span>`;
+
+            grid.innerHTML += `
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700 transition">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider bg-cyan-950 px-2 py-0.5 rounded border border-cyan-900">${p.category}</span>
+                            ${stockStatus}
+                        </div>
+                        <h3 class="font-bold text-white text-base mb-2">${p.name}</h3>
+                        <p class="text-2xl font-bold font-mono text-cyan-400 mb-4">$${p.price.toFixed(2)}</p>
+                    </div>
+                    <button onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''} class="w-full py-2.5 rounded-lg font-semibold text-sm transition ${p.stock > 0 ? 'bg-cyan-600 hover:bg-cyan-500 text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">
+                        <i class="fa-solid fa-cart-plus mr-1"></i> Agregar al Carrito
+                    </button>
+                </div>
+            `;
+        });
+    }
+
+    function filterCategory(cat) {
+        renderStore(cat);
+    }
+
+    function addToCart(productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod || prod.stock <= 0) return;
+
+        const existing = cart.find(item => item.id === productId);
+        if (existing) {
+            if(existing.qty < prod.stock) {
+                existing.qty++;
+            } else {
+                alert("Has alcanzado el límite de stock disponible para este componente.");
+                return;
+            }
+        } else {
+            cart.push({ id: prod.id, name: prod.name, price: prod.price, qty: 1 });
+        }
+
+        saveData();
+        alert(`¡${prod.name} añadido al carrito!`);
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-items-container');
+        container.innerHTML = '';
+
+        if (cart.length === 0) {
+            container.innerHTML = `<p class="text-slate-500 text-center py-8">Tu carrito está vacío. Añade componentes desde el catálogo.</p>`;
+            updateCartTotals(0);
+            return;
+        }
+
+        let subtotal = 0;
+        cart.forEach((item, idx) => {
+            const itemTotal = item.price * item.qty;
+            subtotal += itemTotal;
+
+            container.innerHTML += `
+                <div class="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-lg">
+                    <div>
+                        <h4 class="font-bold text-white text-sm">${item.name}</h4>
+                        <p class="text-xs text-slate-400 font-mono">$${item.price.toFixed(2)} c/u</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center border border-slate-800 rounded bg-slate-900">
+                            <button onclick="changeQty(${idx}, -1)" class="px-3 py-1 text-slate-400 hover:text-white">-</button>
+                            <span class="px-2 text-sm font-bold text-white">${item.qty}</span>
+                            <button onclick="changeQty(${idx}, 1)" class="px-3 py-1 text-slate-400 hover:text-white">+</button>
+                        </div>
+                        <span class="font-mono text-cyan-400 font-bold w-20 text-right">$${itemTotal.toFixed(2)}</span>
+                        <button onclick="removeFromCart(${idx})" class="text-rose-400 hover:text-rose-300 ml-2">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        updateCartTotals(subtotal);
+    }
+
+    function changeQty(index, delta) {
+        const item = cart[index];
+        const prod = products.find(p => p.id === item.id);
+
+        if (delta > 0 && item.qty >= prod.stock) {
+            alert("No hay más unidades en inventario.");
+            return;
+        }
+
+        item.qty += delta;
+        if (item.qty <= 0) cart.splice(index, 1);
+        saveData();
+        renderCart();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        saveData();
+        renderCart();
+    }
+
+    function updateCartTotals(subtotal) {
+        const tax = subtotal * 0.16;
+        const total = subtotal + tax;
+
+        document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+        document.getElementById('cart-tax').innerText = `$${tax.toFixed(2)}`;
+        document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+    }
+
+    function processOrder() {
+        const nameInput = document.getElementById('client-name').value.trim();
+        const idDocInput = document.getElementById('client-id').value.trim().toUpperCase();
+        const address = document.getElementById('client-address').value.trim();
+
+        if (cart.length === 0) {
+            alert("Debes agregar al menos un componente al carrito.");
+            return;
+        }
+
+        if (!nameInput || !idDocInput || !address) {
+            alert("Por favor completa todos los datos de facturación (Nombre, Cédula/RIF y Dirección).");
+            return;
+        }
+
+        const idRegex = /^[VEJGP]-\d{7,9}$/;
+        if (!idRegex.test(idDocInput)) {
+            alert("Formato de Cédula/RIF inválido. Debe incluir el prefijo y guión. Ejemplos válidos: V-12345678, E-87654321 o J-123456789.");
+            return;
+        }
+
+        const nameExists = orders.some(ord => ord.client.name.toLowerCase() === nameInput.toLowerCase());
+        if (nameExists) {
+            alert(`Ya existe un pedido registrado a nombre de "${nameInput}". No se permiten nombres duplicados.`);
+            return;
+        }
+
+        const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+        const tax = subtotal * 0.16;
+        const total = subtotal + tax;
+
+        const newOrder = {
+            id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+            date: new Date().toLocaleDateString('es-VE'),
+            client: { name: nameInput, idDoc: idDocInput, address },
+            items: [...cart],
+            subtotal,
+            tax,
+            total,
+            status: 'Pendiente'
+        };
+
+        cart.forEach(item => {
+            const p = products.find(prod => prod.id === item.id);
+            if (p) p.stock -= item.qty;
+        });
+
+        orders.push(newOrder);
+        cart = [];
+        saveData();
+
+        document.getElementById('client-name').value = '';
+        document.getElementById('client-id').value = '';
+        document.getElementById('client-address').value = '';
+
+        if (confirm(`¡Orden ${newOrder.id} registrada con éxito!\n\n¿Deseas descargar/imprimir tu factura PDF ahora?`)) {
+            downloadPDF(newOrder.id);
+        }
+
+        switchTab('client-orders');
+    }
+
+    function renderClientOrders() {
+        const container = document.getElementById('client-orders-list-container');
+        const searchInput = document.getElementById('client-search-id').value.trim().toUpperCase();
+        container.innerHTML = '';
+
+        const filteredOrders = searchInput
+            ? orders.filter(ord => ord.client.idDoc.includes(searchInput))
+            : orders;
+
+        if (filteredOrders.length === 0) {
+            container.innerHTML = `<p class="text-slate-500 text-center py-8">No se encontraron facturas asociadas a esta Cédula o RIF.</p>`;
+            return;
+        }
+
+        filteredOrders.forEach(ord => {
+            let itemsHtml = ord.items.map(i => `<li class="text-xs text-slate-300">• ${i.name} (x${i.qty}) - $${(i.price * i.qty).toFixed(2)}</li>`).join('');
+            container.innerHTML += `
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-white text-base">${ord.id}</span>
+                            <span class="text-xs bg-cyan-950 text-cyan-400 border border-cyan-900 px-2 py-0.5 rounded font-mono">${ord.date}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Cliente: <span class="text-white font-medium">${ord.client.name}</span> (${ord.client.idDoc})</p>
+                        <ul class="mt-2 space-y-0.5">${itemsHtml}</ul>
+                    </div>
+                    <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                        <span class="text-lg font-bold font-mono text-cyan-400">$${ord.total.toFixed(2)}</span>
+                        <button onclick="downloadPDF('${ord.id}')" class="w-full md:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition border border-slate-700">
+                            <i class="fa-solid fa-file-pdf mr-1 text-rose-400"></i> Descargar Factura PDF
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function clearClientSearch() {
+        document.getElementById('client-search-id').value = '';
+        renderClientOrders();
+    }
+
+    function renderInventory() {
+        const tbody = document.getElementById('inventory-table-body');
+        tbody.innerHTML = '';
+
+        products.forEach(p => {
+            tbody.innerHTML += `
+                <tr class="border-b border-slate-800 hover:bg-slate-950/40">
+                    <td class="p-4 font-medium text-white">${p.name}</td>
+                    <td class="p-4 text-slate-400">${p.category}</td>
+                    <td class="p-4 font-mono text-cyan-400">$${p.price.toFixed(2)}</td>
+                    <td class="p-4 font-mono">${p.stock} un.</td>
+                    <td class="p-4 text-center">
+                        <button onclick="deleteInventoryItem(${p.id})" class="text-rose-400 hover:text-rose-300 p-1 rounded transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function addInventoryItem() {
+        const name = document.getElementById('inv-name').value.trim();
+        const category = document.getElementById('inv-cat').value;
+        const price = parseFloat(document.getElementById('inv-price').value);
+        const stock = parseInt(document.getElementById('inv-stock').value);
+
+        if (!name || isNaN(price) || isNaN(stock)) {
+            alert("Por favor completa correctamente todos los campos del inventario.");
+            return;
+        }
+
+        const newProduct = {
+            id: Date.now(),
+            name,
+            category,
+            price,
+            stock
+        };
+
+        products.push(newProduct);
+        saveData();
+        renderInventory();
+        renderStore();
+
+        document.getElementById('inv-name').value = '';
+        document.getElementById('inv-price').value = '';
+        document.getElementById('inv-stock').value = '';
+        alert("¡Componente agregado exitosamente al inventario!");
+    }
+
+    function deleteInventoryItem(id) {
+        if(confirm("¿Estás seguro de eliminar este componente del inventario?")) {
+            products = products.filter(p => p.id !== id);
+            saveData();
+            renderInventory();
+            renderStore();
+        }
+    }
+
+    function renderOrders() {
+        const container = document.getElementById('orders-list-container');
+        container.innerHTML = '';
+
+        if (orders.length === 0) {
+            container.innerHTML = `<p class="text-slate-500 text-center py-8">No hay pedidos registrados en el sistema.</p>`;
+            return;
+        }
+
+        orders.forEach(ord => {
+            let itemsHtml = ord.items.map(i => `<li class="text-xs text-slate-300">• ${i.name} (x${i.qty}) - $${(i.price * i.qty).toFixed(2)}</li>`).join('');
+            container.innerHTML += `
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-white text-base">${ord.id}</span>
+                            <span class="text-xs bg-amber-950 text-amber-400 border border-amber-900 px-2 py-0.5 rounded font-mono">${ord.date}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Cliente: <span class="text-white font-semibold">${ord.client.name}</span> | RIF/Cédula: <span class="text-cyan-400 font-mono">${ord.client.idDoc}</span></p>
+                        <p class="text-xs text-slate-400">Dirección: ${ord.client.address}</p>
+                        <ul class="mt-2 space-y-0.5">${itemsHtml}</ul>
+                    </div>
+                    <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                        <span class="text-lg font-bold font-mono text-cyan-400">$${ord.total.toFixed(2)}</span>
+                        <button onclick="downloadPDF('${ord.id}')" class="w-full md:w-auto px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold transition">
+                            <i class="fa-solid fa-print mr-1"></i> Imprimir Factura Fiscal
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function downloadPDF(orderId) {
+        const ord = orders.find(o => o.id === orderId);
+        if(!ord) return;
+
+        document.getElementById('pdf-invoice-id').innerText = `#${ord.id}`;
+        document.getElementById('pdf-invoice-date').innerText = `Fecha: ${ord.date}`;
+        document.getElementById('pdf-client-name').innerText = `Cliente: ${ord.client.name}`;
+        document.getElementById('pdf-client-id').innerText = `Cédula / RIF: ${ord.client.idDoc}`;
+        document.getElementById('pdf-client-address').innerText = `Dirección: ${ord.client.address}`;
+
+        const itemsBody = document.getElementById('pdf-items-body');
+        itemsBody.innerHTML = '';
+        ord.items.forEach(i => {
+            itemsBody.innerHTML += `
+                <tr class="border-b border-slate-200">
+                    <td class="p-2 font-bold">${i.qty}</td>
+                    <td class="p-2">${i.name}</td>
+                    <td class="p-2 text-right font-mono">$${i.price.toFixed(2)}</td>
+                    <td class="p-2 text-right font-mono">$${(i.price * i.qty).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('pdf-subtotal').innerText = `$${ord.subtotal.toFixed(2)}`;
+        document.getElementById('pdf-tax').innerText = `$${ord.tax.toFixed(2)}`;
+        document.getElementById('pdf-total').innerText = `$${ord.total.toFixed(2)}`;
+
+        const printWindow = window.open('', '_blank');
+        const templateHtml = document.getElementById('invoice-pdf-template').outerHTML;
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Factura ${ord.id} - CyberTech</title>
+                <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"><\/script>
+            </head>
+            <body class="bg-white p-6" onload="window.print(); window.close();">
+                ${templateHtml}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    function updateBadges() {
+        const totalCartItems = cart.reduce((acc, i) => acc + i.qty, 0);
+        document.getElementById('cart-badge').innerText = totalCartItems;
+        document.getElementById('orders-badge').innerText = orders.length;
+    }
+
+    // Inicialización al cargar la página
+    updateBadges();
+    renderStore();
+    renderInventory();
+    renderCart();
+    renderOrders();
+    renderClientOrders();
+</script>
+</body>
+</html>
