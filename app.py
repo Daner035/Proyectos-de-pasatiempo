@@ -109,8 +109,8 @@ with col2:
     st.subheader(f"2. Matriz RACI Calculada: *{nombre_tarea}*")
     df_raci = calcular_raci(pesos)
     
-    # Mostrar tabla de resultados
-    st.dataframe(df_raci, use_container_width=True)
+    # Mostrar tabla de resultados con el nuevo formato de ancho
+    st.dataframe(df_raci, width='stretch')
     
     # Gráfico de barras de afinidad
     st.subheader("Probabilidad de Afinidad por Estudiante")
